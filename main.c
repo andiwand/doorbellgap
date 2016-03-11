@@ -373,7 +373,7 @@ ISR(PCINT0_vect) {
 	uint8_t change = PINB ^ last;
 	
 	if (GET(change, PIN_INPUT)) {
-		if (GET(PINB, PIN_INPUT)) {
+		if (!GET(PINB, PIN_INPUT)) {
 			state_set(SEND);
 		}
 	}
