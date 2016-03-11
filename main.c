@@ -10,7 +10,7 @@
 #define CLEAR(a,b)				a &= ~_BV(b)
 #define HIGH(a,b)				SET(a,b)
 #define LOW(a,b)				CLEAR(a,b)
-#define GET(a,b)				a & _BV(b)
+#define GET(a,b)				(a & _BV(b))
 #define TOGGLE(a,b)				a ^= _BV(b)
 
 #define MAGIC 0x616e6469
@@ -100,6 +100,7 @@ void setup() {
     CLEAR(DDRB, PIN_BUTTON); // set button as input
     CLEAR(DDRB, PIN_INPUT); // set input as input
     SET(PORTB, PIN_BUTTON); // set pull-up for button
+    SET(PORTB, PIN_INPUT); // set pull-up for input
     
     if (config_load_head()) {
     	config_load_frame();
