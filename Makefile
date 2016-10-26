@@ -3,20 +3,21 @@ DEVICE = attiny85
 CLOCK = 16000000
 PROGRAMMER = -c avrisp -b 19200 -P /dev/ttyACM0
 CSTANDARD = gnu99
-# Add more objects for each .c file here
+
 OBJECTS = main.o
 
 # fuse settings:
 # use http://www.engbedded.com/fusecalc
 #FUSES = -U lfuse:w:0x62:m -U hfuse:w:0xdf:m -U efuse:w:0xff:m # 1mhz
 #FUSES = -U lfuse:w:0xe2:m -U hfuse:w:0xdf:m -U efuse:w:0xff:m # 8mhz
-FUSES = -U lfuse:w:0xe1:m -U hfuse:w:0xdf:m -U efuse:w:0xff:m
+FUSES = -U lfuse:w:0xe1:m -U hfuse:w:0xdf:m -U efuse:w:0xff:m # 16mhz
 
 AVRDUDE = avrdude $(PROGRAMMER) -p $(DEVICE)
 COMPILE = avr-gcc -Wall -std=$(CSTANDARD) -Os -DF_CPU=$(CLOCK) -mmcu=$(DEVICE)
 
-# symbolic targets:
-all: main.hex
+all: hex
+
+install: flash fuse
 
 .c.o:
 	$(COMPILE) -c $< -o $@
@@ -27,36 +28,34 @@ all: main.hex
 .c.s:
 	$(COMPILE) -S $< -o $@
 
-flash: all
-	$(AVRDUDE) -U flash:w:main.hex:i
+flash: hex
+	$(AVRDUDE) -v -U flash:w:main.flash.hex -U eeprom:w:main.eeprom.hex
 
 fuse:
 	$(AVRDUDE) $(FUSES)
 
-install: flash fuse
-
-# if you use a bootloader, change the command below appropriately:
-load: all
-	bootloadHID main.hex
-
 clean:
 	rm -f main.hex main.elf $(OBJECTS)
 
-# file targets:
 main.elf: $(OBJECTS)
 	$(COMPILE) -o main.elf $(OBJECTS)
 
-main.hex: main.elf
-	rm -f main.hex
-	avr-objcopy -j .text -j .data -O ihex main.elf main.hex
+hex: main.elf
+	rm -f main.flash.hex main.eeprom.hex
+	avr-objcopy -j .text -j .data -O ihex main.elf main.flash.hex
+	avr-objcopy -j .eeprom --set-section-flags=.eeprom="alloc,load" --change-section-lma .eeprom=0 -O ihex main.elf main.eeprom.hex
 	avr-size --format=avr --mcu=$(DEVICE) main.elf
-# If you have an EEPROM section, you must also create a hex file for the
-# EEPROM and add it to the "flash" target.
 
-# Targets for code debugging and analysis:
-disasm: main.elf
-	avr-objdump -d main.elf
+backup:
+	#calibration eeprom efuse flash fuse hfuse lfuse lock signature application apptable boot prodsig usersig
+	@for memory in flash eeprom; do \
+		$(AVRDUDE) -v -U $(memory):r:$(DEVICE).$(memory).hex:i; \
+	done
 
-cpp:
-	$(COMPILE) -E main.c
+disassemble: main.elf
+	avr-objdump -s -j .fuse main.elf
+	avr-objdump -C -d main.elf 2>&1
+
+dumpelf: main.elf
+	avr-objdump -s -h main..elf
 
