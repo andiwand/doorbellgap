@@ -35,7 +35,7 @@ fuse:
 	$(AVRDUDE) $(FUSES)
 
 clean:
-	rm -f main.hex main.elf $(OBJECTS)
+	rm -f main.flash.hex main.eeprom.hex main.elf $(OBJECTS)
 
 main.elf: $(OBJECTS)
 	$(COMPILE) -o main.elf $(OBJECTS)
